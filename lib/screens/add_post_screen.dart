@@ -195,8 +195,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
           }
           description ??= text.trim();
           setState(() {
-            _aiCategory =
-                category ?? AppLocalizations.of(context).unknownLanguage;
+            _aiCategory = category ?? AppLocalizations.of(context).categoryLainnya;
             _aiDescription = description!;
             _descriptionController.text = _aiDescription!;
           });
@@ -336,13 +335,12 @@ class _AddPostScreenState extends State<AddPostScreen> {
           .doc(uid)
           .get();
       final fullName =
-          userDoc.data()?['fullName'] ??
-          AppLocalizations.of(context).unknownLanguage;
+          userDoc.data()?['fullName'] ?? AppLocalizations.of(context).anonymous;
 
       await FirebaseFirestore.instance.collection('posts').add({
         'image': _base64Image,
         'description': _descriptionController.text,
-        'category': _aiCategory ?? AppLocalizations.of(context).unknownLanguage,
+        'category': _aiCategory ?? AppLocalizations.of(context).categoryLainnya,
         'createdAt': now,
         'latitude': _latitude,
         'longitude': _longitude,

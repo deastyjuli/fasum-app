@@ -244,4 +244,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get indonesian => 'Indonesia';
+
+  @override
+  String get anonymous => 'Anonim';
 }

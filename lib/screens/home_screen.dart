@@ -178,7 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
             }
             final posts = snapshot.data!.docs.where((doc) {
               final data = doc.data();
-              final category = data['category'] ?? AppLocalizations.of(context).categoryLainnya;;
+              final category = data['category'] ?? AppLocalizations.of(context).categoryLainnya;
               return selectedCategory == null || selectedCategory == category;
             }).toList();
 

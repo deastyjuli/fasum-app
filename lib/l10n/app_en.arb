@@ -71,5 +71,7 @@
   "language": "Language",
   "unknownLanguage": "Unknown Language",
   "english": "English",
-  "indonesian": "Indonesian"
+  "indonesian": "Indonesian",
+  "anonymous": "Anonymous",
+  "reportDetail": "Report Detail"
 }

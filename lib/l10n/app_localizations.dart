@@ -529,6 +529,12 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Indonesia'**
   String get indonesian;
+
+  /// No description provided for @anonymous.
+  ///
+  /// In id, this message translates to:
+  /// **'Anonim'**
+  String get anonymous;
 }
 
 class _AppLocalizationsDelegate

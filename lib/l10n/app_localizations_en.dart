@@ -242,4 +242,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get indonesian => 'Indonesian';
+
+  @override
+  String get anonymous => 'Anonymous';
 }
