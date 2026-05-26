@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fasum/l10n/app_localizations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:fasum/l10n/app_localizations.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:http/http.dart' as http;
 
@@ -36,12 +36,10 @@ class _AddPostScreenState extends State<AddPostScreen> {
       localizations.categoryMarkaPudar,
       localizations.categoryLampuMati,
       localizations.categoryTrotoarRusak,
-      localizations.categoryRambuRusak,
       localizations.categoryJembatanRusak,
       localizations.categorySampahMenumpuk,
       localizations.categorySaluranTersumbat,
       localizations.categorySungaiTercemar,
-      localizations.categorySampahSungai,
       localizations.categoryPohonTumbang,
       localizations.categoryTamanRusak,
       localizations.categoryFasilitasRusak,
@@ -147,18 +145,26 @@ class _AddPostScreenState extends State<AddPostScreen> {
                 "inlineData": {"mimeType": "image/jpeg", "data": base64Image},
               },
               {
-                "text":
-                    "Berdasarkan foto ini, identifikasi satu kategori utama kerusakan fasilitas umum "
-                    "dari daftar berikut: Jalan Rusak, Marka Pudar, Lampu Mati, Trotoar Rusak, "
-                    "Rambu Rusak, Jembatan Rusak, Sampah Menumpuk, Saluran Tersumbat, Sungai Tercemar, "
-                    "Sampah Sungai, Pohon Tumbang, Taman Rusak, Fasilitas Rusak, Pipa Bocor, "
-                    "Vandalisme, Banjir, dan Lainnya. "
-                    "Pilih kategori yang paling dominan atau paling mendesak untuk dilaporkan. "
-                    "Buat deskripsi singkat untuk laporan perbaikan, dan tambahkan permohonan perbaikan. "
-                    "Fokus pada kerusakan yang terlihat dan hindari spekulasi.\n\n"
-                    "Format output yang diinginkan:\n"
-                    "Kategori: [satu kategori yang dipilih]\n"
-                    "Deskripsi: [deskripsi singkat]",
+                "text": AppLocalizations.of(context).localeName == 'en'
+                    ? "Based on this photo, identify one main category of public facility damage "
+                          "from the following list: Damaged Road, Faded Markings, Broken Street Light, "
+                          "Damaged Sidewalk, Broken Bridge, Garbage Pile, Blocked Drainage, Polluted River, "
+                          "Fallen Tree, Damaged Park, Damaged Facility, Leaking Pipe, Vandalism, Flood, Others. "
+                          "Choose the most dominant category. "
+                          "Create a short repair report description and add a repair request.\n\n"
+                          "Output format:\n"
+                          "Category: [category]\n"
+                          "Description: [description]"
+                    : "Berdasarkan foto ini, identifikasi satu kategori utama kerusakan fasilitas umum "
+                          "dari daftar berikut: Jalan Rusak, Marka Pudar, Lampu Mati, Trotoar Rusak, "
+                          "Jembatan Rusak, Sampah Menumpuk, Saluran Tersumbat, Sungai Tercemar, "
+                          "Pohon Tumbang, Taman Rusak, Fasilitas Rusak, Pipa Bocor, Vandalisme, "
+                          "Banjir, Lainnya. "
+                          "Pilih kategori yang paling dominan. "
+                          "Buat deskripsi singkat laporan perbaikan.\n\n"
+                          "Format output:\n"
+                          "Kategori: [kategori]\n"
+                          "Deskripsi: [deskripsi]",
               },
             ],
           },
@@ -183,7 +189,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
           String? category;
           String? description;
           for (var line in lines) {
-            final lower = line.toLowerCase().trim();
+            final lower = line.toLowerCase();
             if (lower.startsWith('kategori:') ||
                 lower.startsWith('category:')) {
               category = line.split(':').skip(1).join(':').trim();
@@ -195,7 +201,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
           }
           description ??= text.trim();
           setState(() {
-            _aiCategory = category ?? AppLocalizations.of(context).categoryLainnya;
+            _aiCategory =
+                category ?? AppLocalizations.of(context).categoryLainnya;
             _aiDescription = description!;
             _descriptionController.text = _aiDescription!;
           });
@@ -265,13 +272,15 @@ class _AddPostScreenState extends State<AddPostScreen> {
   }
 
   Future<void> sendNotificationToTopic(String body, String senderName) async {
-    final url = Uri.parse('https://fasum-cloud-gilt.vercel.app/send-to-topic');
+    final url = Uri.parse(
+      'https://fasum-cloud-gilt.vercel.app/send-to-topic'
+    );
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         "topic": "berita-fasum",
-        "title": "🔔 Laporan Baru",
+        "title": " 🔔 Laporan Baru",
         "body": body,
         "senderName": senderName,
         "senderPhotoUrl":
@@ -334,13 +343,12 @@ class _AddPostScreenState extends State<AddPostScreen> {
           .collection('users')
           .doc(uid)
           .get();
-      final fullName =
-          userDoc.data()?['fullName'] ?? AppLocalizations.of(context).anonymous;
+      final fullName = userDoc.data()?['fullName'] ?? 'Anonymous';
 
       await FirebaseFirestore.instance.collection('posts').add({
         'image': _base64Image,
         'description': _descriptionController.text,
-        'category': _aiCategory ?? AppLocalizations.of(context).categoryLainnya,
+        'category': _aiCategory ?? 'Tidak diketahui',
         'createdAt': now,
         'latitude': _latitude,
         'longitude': _longitude,
