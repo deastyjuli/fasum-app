@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:fasum/l10n/app_localizations.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:http/http.dart' as http;
 
@@ -28,25 +29,28 @@ class _AddPostScreenState extends State<AddPostScreen> {
   String? _aiDescription;
   bool _isGenerating = false;
 
-  List<String> categories = [
-    'Jalan Rusak',
-    'Marka Pudar',
-    'Lampu Mati',
-    'Trotoar Rusak',
-    'Rambu Rusak',
-    'Jembatan Rusak',
-    'Sampah Menumpuk',
-    'Saluran Tersumbat',
-    'Sungai Tercemar',
-    'Sampah Sungai',
-    'Pohon Tumbang',
-    'Taman Rusak',
-    'Fasilitas Rusak',
-    'Pipa Bocor',
-    'Vandalisme',
-    'Banjir',
-    'Lainnya',
-  ];
+  List<String> get categories {
+    final localizations = AppLocalizations.of(context);
+    return [
+      localizations.categoryJalanRusak,
+      localizations.categoryMarkaPudar,
+      localizations.categoryLampuMati,
+      localizations.categoryTrotoarRusak,
+      localizations.categoryRambuRusak,
+      localizations.categoryJembatanRusak,
+      localizations.categorySampahMenumpuk,
+      localizations.categorySaluranTersumbat,
+      localizations.categorySungaiTercemar,
+      localizations.categorySampahSungai,
+      localizations.categoryPohonTumbang,
+      localizations.categoryTamanRusak,
+      localizations.categoryFasilitasRusak,
+      localizations.categoryPipaBocor,
+      localizations.categoryVandalisme,
+      localizations.categoryBanjir,
+      localizations.categoryLainnya,
+    ];
+  }
 
   void _showCategorySelection() {
     showModalBottomSheet(
@@ -57,19 +61,18 @@ class _AddPostScreenState extends State<AddPostScreen> {
       builder: (BuildContext context) {
         return ListView(
           shrinkWrap: true,
-          children:
-              categories.map((category) {
-                return ListTile(
-                  title: Text(category),
-                  onTap: () {
-                    setState(() {
-                      _aiCategory =
-                          category; // Ganti AI category dengan pilihan user
-                    });
-                    Navigator.pop(context);
-                  },
-                );
-              }).toList(),
+          children: categories.map((category) {
+            return ListTile(
+              title: Text(category),
+              onTap: () {
+                setState(() {
+                  _aiCategory =
+                      category; // Ganti AI category dengan pilihan user
+                });
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
         );
       },
     );
@@ -90,9 +93,13 @@ class _AddPostScreenState extends State<AddPostScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).failedToPickImage(e.toString()),
+            ),
+          ),
+        );
       }
     }
   }
@@ -112,9 +119,13 @@ class _AddPostScreenState extends State<AddPostScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to compress image: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).failedToCompressImage(e.toString()),
+            ),
+          ),
+        );
       }
     }
   }
@@ -126,7 +137,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
       final imageBytes = await _image!.readAsBytes();
       final base64Image = base64Encode(imageBytes);
       const apiKey = 'AIzaSyAyb0E_WyDAPAhuIxYM4Uz0K3SmvRsJIoc';
-      const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent';
+      const url =
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent';
       final body = jsonEncode({
         "contents": [
           {
@@ -161,7 +173,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
         headers: headers,
         body: body,
       );
-	        if (response.statusCode == 200) {
+      if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
         final text =
             jsonResponse['candidates'][0]['content']['parts'][0]['text'];
@@ -171,18 +183,20 @@ class _AddPostScreenState extends State<AddPostScreen> {
           String? category;
           String? description;
           for (var line in lines) {
-            final lower = line.toLowerCase();
-            if (lower.startsWith('kategori:')) {
-              category = line.substring(9).trim();
-            } else if (lower.startsWith('deskripsi:')) {
-              description = line.substring(10).trim();
-            } else if (lower.startsWith('keterangan:')) {
-              description = line.substring(11).trim();
+            final lower = line.toLowerCase().trim();
+            if (lower.startsWith('kategori:') ||
+                lower.startsWith('category:')) {
+              category = line.split(':').skip(1).join(':').trim();
+            } else if (lower.startsWith('deskripsi:') ||
+                lower.startsWith('description:') ||
+                lower.startsWith('keterangan:')) {
+              description = line.split(':').skip(1).join(':').trim();
             }
           }
           description ??= text.trim();
           setState(() {
-            _aiCategory = category ?? 'Tidak diketahui';
+            _aiCategory =
+                category ?? AppLocalizations.of(context).unknownLanguage;
             _aiDescription = description!;
             _descriptionController.text = _aiDescription!;
           });
@@ -202,7 +216,11 @@ class _AddPostScreenState extends State<AddPostScreen> {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Location services are disabled.')),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).locationServicesDisabled,
+            ),
+          ),
         );
         return;
       }
@@ -213,7 +231,11 @@ class _AddPostScreenState extends State<AddPostScreen> {
         if (permission == LocationPermission.deniedForever ||
             permission == LocationPermission.denied) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Location permissions are denied.')),
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context).locationPermissionsDenied,
+              ),
+            ),
           );
           return;
         }
@@ -230,7 +252,11 @@ class _AddPostScreenState extends State<AddPostScreen> {
     } catch (e) {
       debugPrint('Failed to retrieve location: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to retrieve location: $e')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).failedToRetrieveLocation(e.toString()),
+          ),
+        ),
       );
       setState(() {
         _latitude = null;
@@ -239,10 +265,50 @@ class _AddPostScreenState extends State<AddPostScreen> {
     }
   }
 
+  Future<void> sendNotificationToTopic(String body, String senderName) async {
+    final url = Uri.parse('https://fasum-cloud-gilt.vercel.app/send-to-topic');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "topic": "berita-fasum",
+        "title": "🔔 Laporan Baru",
+        "body": body,
+        "senderName": senderName,
+        "senderPhotoUrl":
+            "https://static.vecteezy.com/system/resources/thumbnails/041/642/167/small_2x/ai-generated-portrait-of-handsome-smiling-young-man-with-folded-arms-isolated-free-png.png",
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).notificationSent),
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).notificationFailed(response.body),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _submitPost() async {
     if (_base64Image == null || _descriptionController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please add an image and description.')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).pleaseAddImageAndDescription,
+          ),
+        ),
       );
       return;
     }
@@ -255,7 +321,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
     if (uid == null) {
       setState(() => _isUploading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('User not found. Please sign in.')),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).userNotFoundPleaseSignIn),
+        ),
       );
       return;
     }
@@ -263,14 +331,18 @@ class _AddPostScreenState extends State<AddPostScreen> {
     try {
       await _getLocation();
 
-      final userDoc =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      final fullName = userDoc.data()?['fullName'] ?? 'Anonymous';
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+      final fullName =
+          userDoc.data()?['fullName'] ??
+          AppLocalizations.of(context).unknownLanguage;
 
       await FirebaseFirestore.instance.collection('posts').add({
         'image': _base64Image,
         'description': _descriptionController.text,
-        'category': _aiCategory ?? 'Tidak diketahui',
+        'category': _aiCategory ?? AppLocalizations.of(context).unknownLanguage,
         'createdAt': now,
         'latitude': _latitude,
         'longitude': _longitude,
@@ -280,17 +352,25 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
       if (!mounted) return;
 
+      sendNotificationToTopic(_descriptionController.text, fullName);
+
       Navigator.pop(context);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Post uploaded successfully!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).postUploadedSuccessfully),
+        ),
+      );
     } catch (e) {
       debugPrint('Upload failed: $e');
       if (!mounted) return;
       setState(() => _isUploading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to upload the post: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).failedToUploadPost(e.toString()),
+          ),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isUploading = false);
@@ -307,7 +387,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
             children: <Widget>[
               ListTile(
                 leading: const Icon(Icons.camera_alt),
-                title: const Text('Take a picture'),
+                title: Text(AppLocalizations.of(context).takePicture),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.camera);
@@ -315,7 +395,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library),
-                title: const Text('Choose from gallery'),
+                title: Text(AppLocalizations.of(context).chooseFromGallery),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.gallery);
@@ -323,7 +403,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.cancel),
-                title: const Text('Cancel'),
+                title: Text(AppLocalizations.of(context).cancel),
                 onTap: () => Navigator.pop(context),
               ),
             ],
@@ -336,7 +416,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Add Post')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).addPost)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -350,24 +430,23 @@ class _AddPostScreenState extends State<AddPostScreen> {
                   color: Colors.grey[300],
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child:
-                    _image != null
-                        ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(
-                            _image!,
-                            height: 250,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                        : Center(
-                          child: Icon(
-                            Icons.add_a_photo,
-                            size: 50,
-                            color: Colors.grey,
-                          ),
+                child: _image != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          _image!,
+                          height: 250,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
                         ),
+                      )
+                    : Center(
+                        child: Icon(
+                          Icons.add_a_photo,
+                          size: 50,
+                          color: Colors.grey,
+                        ),
+                      ),
               ),
             ),
 
@@ -426,7 +505,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
                     if (_image != null)
                       IconButton(
                         icon: const Icon(Icons.refresh),
-                        tooltip: 'Generate another description',
+                        tooltip: AppLocalizations.of(
+                          context,
+                        ).generateAnotherDescription,
                         onPressed: _generateDescriptionWithAI,
                       ),
                   ],
@@ -444,7 +525,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
                     textCapitalization: TextCapitalization.sentences,
                     maxLines: 6,
                     decoration: InputDecoration(
-                      hintText: 'Add a brief description...',
+                      hintText: AppLocalizations.of(
+                        context,
+                      ).addBriefDescription,
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -464,18 +547,16 @@ class _AddPostScreenState extends State<AddPostScreen> {
               ),
               child: _isUploading
                   ? SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white,
-                        ),
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
-                  )
-                  : const Text(
-                    'Post',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                    )
+                  : Text(
+                      AppLocalizations.of(context).post,
+                      style: TextStyle(color: Colors.white),
+                    ),
             ),
           ],
         ),

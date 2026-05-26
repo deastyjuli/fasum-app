@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fasum/screens/add_post_screen.dart';
 import 'package:fasum/screens/detail_screen.dart';
+import 'package:fasum/screens/settings_screen.dart';
 import 'package:fasum/screens/sign_in_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fasum/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -17,37 +19,40 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String? selectedCategory;
 
-  List<String> categories = [
-    'Jalan Rusak',
-    'Marka Pudar',
-    'Lampu Mati',
-    'Trotoar Rusak',
-    'Rambu Rusak',
-    'Jembatan Rusak',
-    'Sampah Menumpuk',
-    'Saluran Tersumbat',
-    'Sungai Tercemar',
-    'Sampah Sungai',
-    'Pohon Tumbang',
-    'Taman Rusak',
-    'Fasilitas Rusak',
-    'Pipa Bocor',
-    'Vandalisme',
-    'Banjir',
-    'Lainnya',
-  ];
+  List<String> get categories {
+    final localizations = AppLocalizations.of(context);
+    return [
+      localizations.categoryJalanRusak,
+      localizations.categoryMarkaPudar,
+      localizations.categoryLampuMati,
+      localizations.categoryTrotoarRusak,
+      localizations.categoryRambuRusak,
+      localizations.categoryJembatanRusak,
+      localizations.categorySampahMenumpuk,
+      localizations.categorySaluranTersumbat,
+      localizations.categorySungaiTercemar,
+      localizations.categorySampahSungai,
+      localizations.categoryPohonTumbang,
+      localizations.categoryTamanRusak,
+      localizations.categoryFasilitasRusak,
+      localizations.categoryPipaBocor,
+      localizations.categoryVandalisme,
+      localizations.categoryBanjir,
+      localizations.categoryLainnya,
+    ];
+  }
 
   String formatTime(DateTime dateTime) {
     final now = DateTime.now();
     final diff = now.difference(dateTime);
     if (diff.inSeconds < 60) {
-      return '${diff.inSeconds} secs ago';
+      return AppLocalizations.of(context).secondsAgo(diff.inSeconds);
     } else if (diff.inMinutes < 60) {
-      return '${diff.inMinutes} mins ago';
+      return AppLocalizations.of(context).minutesAgo(diff.inMinutes);
     } else if (diff.inHours < 24) {
-      return '${diff.inHours} hrs ago';
+      return AppLocalizations.of(context).hoursAgo(diff.inHours);
     } else if (diff.inHours < 48) {
-      return '1 day ago';
+      return AppLocalizations.of(context).oneDayAgo;
     } else {
       return DateFormat('dd/MM/yyyy').format(dateTime);
     }
@@ -79,29 +84,26 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.clear),
-                  title: const Text('Semua Kategori'),
-                  onTap:
-                      () => Navigator.pop(
-                        context,
-                        null,
-                      ), // Null untuk memilih semua kategori
+                  title: Text(AppLocalizations.of(context).allCategories),
+                  onTap: () => Navigator.pop(
+                    context,
+                    null,
+                  ), // Null untuk memilih semua kategori
                 ),
                 const Divider(),
                 ...categories.map(
                   (category) => ListTile(
                     title: Text(category),
-                    trailing:
-                        selectedCategory == category
-                            ? Icon(
-                              Icons.check,
-                              color: Theme.of(context).colorScheme.primary,
-                            )
-                            : null,
-                    onTap:
-                        () => Navigator.pop(
-                          context,
-                          category,
-                        ), // Kategori yang dipilih
+                    trailing: selectedCategory == category
+                        ? Icon(
+                            Icons.check,
+                            color: Theme.of(context).colorScheme.primary,
+                          )
+                        : null,
+                    onTap: () => Navigator.pop(
+                      context,
+                      category,
+                    ), // Kategori yang dipilih
                   ),
                 ),
               ],
@@ -141,7 +143,17 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             onPressed: _showCategoryFilter,
             icon: const Icon(Icons.filter_list),
-            tooltip: 'Filter Kategori',
+            tooltip: AppLocalizations.of(context).filterCategory,
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
+            icon: const Icon(Icons.settings),
+            tooltip: AppLocalizations.of(context).settings,
           ),
           IconButton(
             onPressed: () {
@@ -156,26 +168,25 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {});
         },
         child: StreamBuilder(
-          stream:
-              FirebaseFirestore.instance
-                  .collection('posts')
-                  .orderBy('createdAt', descending: true)
-                  .snapshots(),
+          stream: FirebaseFirestore.instance
+              .collection('posts')
+              .orderBy('createdAt', descending: true)
+              .snapshots(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
-            final posts =
-                snapshot.data!.docs.where((doc) {
-                  final data = doc.data();
-                  final category = data['category'] ?? 'Lainnya';
-                  return selectedCategory == null ||
-                      selectedCategory == category;
-                }).toList();
+            final posts = snapshot.data!.docs.where((doc) {
+              final data = doc.data();
+              final category = data['category'] ?? AppLocalizations.of(context).categoryLainnya;;
+              return selectedCategory == null || selectedCategory == category;
+            }).toList();
 
             if (posts.isEmpty) {
-              return const Center(
-                child: Text("Tidak ada laporan untuk kategori ini."),
+              return Center(
+                child: Text(
+                  AppLocalizations.of(context).noReportsInThisCategory,
+                ),
               );
             }
 
@@ -200,17 +211,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder:
-                            (context) => DetailScreen(
-                              imageBase64: imageBase64,
-                              description: description ?? '',
-                              createdAt: createdAt,
-                              fullName: fullName,
-                              latitude: latitude,
-                              longitude: longitude,
-                              category: category,
-                              heroTag: heroTag,
-                            ),
+                        builder: (context) => DetailScreen(
+                          imageBase64: imageBase64,
+                          description: description ?? '',
+                          createdAt: createdAt,
+                          fullName: fullName,
+                          latitude: latitude,
+                          longitude: longitude,
+                          category: category,
+                          heroTag: heroTag,
+                        ),
                       ),
                     );
                   },
@@ -288,9 +298,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (context) => const AddPostScreen()));
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const AddPostScreen()),
+          );
         },
         child: const Icon(Icons.add),
       ),
